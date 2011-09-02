@@ -20,7 +20,15 @@
 
 $l = array(
     'hooks' => 'Hooks',
-    'hooks_desc' => 'Manage plugin hooks. Depends on PluginLibrary.',
+    'hooks_controls' => 'Controls',
+    'hooks_desc' => 'Create and manage plugin hooks. Depends on PluginLibrary.',
+    'hooks_export' => 'Export',
+    'hooks_hook' => 'Hook',
+    'hooks_import' => 'Import',
+    'hooks_legend_cross' => 'Hook is disabled and inactive',
+    'hooks_legend_tick' => 'Hook is enabled and active',
+    'hooks_new' => 'Add a new Hook...',
+    'hooks_tab_desc' => 'This section allows you to create and manage plugin hooks.',
     );
 
 ?>
