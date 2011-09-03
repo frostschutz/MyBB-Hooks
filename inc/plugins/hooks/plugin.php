@@ -343,5 +343,192 @@ function hooks_page()
     $page->output_footer();
 }
 
+/**
+ * Hooks edit page.
+ */
+function hooks_page_edit()
+{
+    global $mybb, $db, $lang, $page, $PL;
+    $PL or require_once PLUGINLIBRARY;
+
+    $lang->load('hooks');
+
+    $hid = intval($mybb->input['hid']);
+
+    if($mybb->request_method == 'post')
+    {
+        if($mybb->input['cancel'])
+        {
+            admin_redirect(HOOKS_URL);
+        }
+
+        // validate input
+
+        $errors = array();
+
+        $hook = trim($mybb->input['hhook']);
+
+        if(!strlen($hook))
+        {
+            $errors[] = $lang->hooks_error_hook;
+        }
+
+        $title = trim($mybb->input['htitle']);
+
+        if(!$title)
+        {
+            $errors[] = $lang->hooks_error_title;
+        }
+
+        $description = trim($mybb->input['hdescription']);
+        // description is optional
+
+        $priority = intval($mybb->input['hpriority']);
+        // priority is optional
+
+        if(trim($mybb->input['hpriority']) !== strval($priority))
+        {
+            // default priority
+            $priority = 10;
+        }
+
+        $code = $mybb->input['hcode'];
+
+        if(!trim($code))
+        {
+            $errors[] = $lang->hooks_error_code;
+        }
+
+        if(!$errors && !$mybb->input['preview'])
+        {
+            $data = array(
+                'htitle' => $db->escape_string($title),
+                'hdescription' => $db->escape_string($description),
+                'hhook' => $db->escape_string($hook),
+                'hpriority' => $priority,
+                'hcode' => $db->escape_string($code),
+                'hdate' => 1,
+                );
+
+            if($hid)
+            {
+                $update = $db->update_query('hooks',
+                                            $data,
+                                            "hid={$hid}");
+            }
+
+            if(!$update)
+            {
+                $data['hsize'] = 0;
+                $data['hdate'] = 0;
+                $db->insert_query('hooks', $data);
+            }
+
+            flash_message($lang->hooks_saved, 'success');
+            admin_redirect(HOOKS_URL);
+        }
+
+        // Show a preview
+        $preview = true;
+    }
+
+    else if($hid > 0)
+    {
+        // fetch info of existing hook
+        $query = $db->simple_select('hooks',
+                                    'htitle,hdescription,hhook,hpriority,hcode',
+                                    "hid='{$hid}'");
+        $row = $db->fetch_array($query);
+
+        if($row)
+        {
+            $mybb->input = array_merge($mybb->input, $row);
+        }
+    }
+
+    // Header stuff.
+    $editurl = $PL->url_append(HOOKS_URL, array('mode' => 'edit'));
+
+    $page->add_breadcrumb_item($lang->hooks_edit, $editurl);
+
+    hooks_output_header();
+    hooks_output_tabs();
+
+    if($errors)
+    {
+        $page->output_inline_error($errors);
+    }
+
+    else if($preview)
+    {
+        hooks_output_preview();
+    }
+
+    $form = new Form($editurl, 'post');
+    $form_container = new FormContainer($lang->hooks_edit);
+
+    echo $form->generate_hidden_field('hid',
+                                      intval($mybb->input['hid']),
+                                      array('id' => 'hid'));
+
+    $form_container->output_row(
+        $lang->hooks_hook,
+        $lang->hooks_hook_desc,
+        $form->generate_text_box('hhook',
+                                 trim($mybb->input['hhook']),
+                                 array('id' => 'hhook')),
+        'hhook'
+        );
+
+    $form_container->output_row(
+        $lang->hooks_title,
+        $lang->hooks_title_desc,
+        $form->generate_text_box('htitle',
+                                 trim($mybb->input['htitle']),
+                                 array('id' => 'htitle')),
+        'htitle'
+        );
+
+    $form_container->output_row(
+        $lang->hooks_description,
+        $lang->hooks_description_desc,
+        $form->generate_text_box('hdescription',
+                                 trim($mybb->input['hdescription']),
+                                 array('id' => 'hdescription')),
+        'hdescription'
+        );
+
+    $form_container->output_row(
+        $lang->hooks_priority,
+        $lang->hooks_priority_desc,
+        $form->generate_text_box('hpriority',
+                                 $mybb->input['hpriority'],
+                                 array('id' => 'hpriority')),
+        'hpriority'
+        );
+
+    $form_container->output_row(
+        $lang->hooks_code,
+        $lang->hooks_code_desc,
+        $form->generate_text_area('hcode',
+                                  $mybb->input['hcode'],
+                                  array('id' => 'hcode')),
+        'hcode'
+        );
+
+    $form_container->end();
+
+    $buttons[] = $form->generate_submit_button($lang->hooks_save);
+    $buttons[] = $form->generate_submit_button($lang->hooks_preview,
+                                               array('name' => 'preview'));
+    $buttons[] = $form->generate_submit_button($lang->hooks_cancel,
+                                               array('name' => 'cancel'));
+
+    $form->output_submit_wrapper($buttons);
+    $form->end();
+
+    $page->output_footer();
+}
+
 /* --- End of file. --- */
 ?>
