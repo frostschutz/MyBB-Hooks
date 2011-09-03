@@ -20,6 +20,8 @@
 
 $l = array(
     'hooks' => 'Hooks',
+    'hooks_PL' => 'The Hooks plugin depends on <a href="http://mods.mybb.com/view/pluginlibrary">PluginLibrary</a>, which is missing. Please install it.',
+    'hooks_PL_old' => 'The Hooks plugin depends on <a href="http://mods.mybb.com/view/pluginlibrary">PluginLibrary</a>, which is too old. Please update it.',
     'hooks_controls' => 'Controls',
     'hooks_desc' => 'Create and manage plugin hooks. Depends on PluginLibrary.',
     'hooks_export' => 'Export',

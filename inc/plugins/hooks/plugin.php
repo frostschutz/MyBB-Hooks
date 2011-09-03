@@ -61,7 +61,124 @@ function hooks_info()
     );
 }
 
+/**
+ * Check if the plugin is installed.
+ */
+function hooks_is_installed()
+{
+    global $db;
+
+    return $db->table_exists('hooks');
+}
+
+/**
+ * Install the plugin.
+ */
+function hooks_install()
+{
+    global $db;
+
+    hooks_depend();
+
+    if(!$db->table_exists('hooks'))
+    {
+        $collation = $db->build_create_table_collation();
+        $prefix = TABLE_PREFIX;
+
+        switch($db->type)
+        {
+            case 'sqlite':
+                $quote = '"';
+                $primary = 'INTEGER NOT NULL';
+                break;
+
+            case 'postgres':
+                $quote = '"';
+                $primary = 'SERIAL NOT NULL';
+                break;
+
+            default:
+                // Assume MySQL
+                $quote = '`';
+                $primary = 'INTEGER NOT NULL AUTO_INCREMENT';
+        }
+
+        $db->write_query("
+            CREATE TABLE {$quote}{$prefix}hooks{$quote}
+            (
+                hid {$primary},
+                htitle VARCHAR(100) NOT NULL,
+                hdescription VARCHAR(200),
+                hhook VARCHAR(150) NOT NULL,
+                hpriority BIGINT NOT NULL,
+                hsize BIGINT NOT NULL,
+                hdate BIGINT NOT NULL,
+                hcode TEXT NOT NULL,
+                PRIMARY KEY (hid)
+            ) {$collation}");
+
+        $db->write_query("CREATE INDEX hsizedate
+                          ON {$quote}{$prefix}hooks{$quote}
+                          (hsize, hdate)");
+    }
+}
+
+/**
+ * Uninstall the plugin.
+ */
+function hooks_uninstall()
+{
+    global $db;
+
+    if($db->table_exists('hooks'))
+    {
+        $db->drop_table('hooks');
+    }
+}
+
+
+/**
+ * Activate the plugin.
+ */
+function hooks_activate()
+{
+    hooks_depend();
+}
+
+/**
+ * Deactivate the plugin.
+ */
+function hooks_deactivate()
+{
+    // do nothing
+}
+
+
 /* --- Helpers: --- */
+
+/**
+ * Plugin Dependencies
+ */
+function hooks_depend()
+{
+    global $lang, $PL;
+
+    $lang->load('hooks');
+
+    if(!file_exists(PLUGINLIBRARY))
+    {
+        flash_message($lang->hooks_PL, 'error');
+        admin_redirect('index.php?module=config-plugins');
+    }
+
+    $PL or require_once PLUGINLIBRARY;
+
+    if($PL->version < 4)
+    {
+        flash_message($lang->hooks_PL_old, 'error');
+        admin_redirect("index.php?module=config-plugins");
+    }
+}
 
 /* --- Hook functions: --- */
 
