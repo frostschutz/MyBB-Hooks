@@ -25,10 +25,17 @@ if(!defined("IN_MYBB"))
          Please make sure IN_MYBB is defined.");
 }
 
+define('HOOKS_DATA', MYBB_ROOT.'inc/plugins/hooks/data.php');
+
 // Load the actual plugin only if in Admin CP.
 if(defined("IN_ADMINCP"))
 {
     require_once MYBB_ROOT."inc/plugins/hooks/plugin.php";
+}
+
+if(file_exists('HOOKS_DATA'))
+{
+    require_once HOOKS_DATA;
 }
 
 /* --- End of file. --- */
