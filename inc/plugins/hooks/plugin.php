@@ -312,6 +312,104 @@ function hooks_page()
                                    'class' => 'align_center',
                                    'width' => '30%'));
 
+    $query = $db->simple_select('hooks',
+                                'hid,hpriority,hhook,htitle,hdescription,hsize,hdate',
+                                '',
+                                array('order_by' => 'hhook,hpriority,htitle,hid'));
+
+    $hook = '';
+
+    while($row = $db->fetch_array($query))
+    {
+        if($row['hhook'] != $hook)
+        {
+            $hook = $row['hhook'];
+
+            $table->construct_cell('<strong>'.htmlspecialchars($row['hhook']).'</strong>');
+            $table->construct_cell('', array('class' => 'align_center'));
+            $table->construct_cell('', array('class' => 'align_center',
+                                             'width' => '15%'));
+            $table->construct_row();
+        }
+
+        $editurl = $PL->url_append(HOOKS_URL,
+                                   array('mode' => 'edit',
+                                         'hook' => $row['hid']));
+
+        $delete = '';
+
+
+        if(!$row['hsize'] && !$row['hdate'])
+        {
+            $deleteurl = $PL->url_append(HOOKS_URL,
+                                         array('mode' => 'delete',
+                                               'hook' => $row['hid'],
+                                               'my_post_key' => $mybb->post_code));
+            $delete = " <a href=\"{$deleteurl}\"><img src=\"styles/{$page->style}/images/icons/delete.gif\" alt=\"{$lang->hooks_delete}\" title=\"{$lang->hooks_delete}\" /></a>";
+        }
+
+        $table->construct_cell("<div style=\"padding-left: 40px;\"><a href=\"{$editurl}\">"
+                               .htmlspecialchars($row['htitle'])
+                               .'</a>'
+                               .$delete
+                               .'<br />'
+                               .htmlspecialchars($row['hdescription'])
+                               .'</div>');
+
+        if(!$row['hsize'])
+        {
+            $activateurl = $PL->url_append(HOOKS_URL,
+                                           array('mode' => 'activate',
+                                                 'hook' => $row['hid'],
+                                                 'my_post_key' => $mybb->post_code));
+
+            $table->construct_cell("<a href=\"{$activateurl}\">{$lang->hooks_activate}</a>",
+                                   array('class' => 'align_center',
+                                         'width' => '15%'));
+        }
+
+        else
+        {
+            $deactivateurl = $PL->url_append(HOOKS_URL,
+                                             array('mode' => 'deactivate',
+                                                   'hook' => $row['hid'],
+                                                   'my_post_key' => $mybb->post_code));
+
+            $table->construct_cell("<a href=\"{$deactivateurl}\">{$lang->hooks_deactivate}</a>",
+                                   array('class' => 'align_center',
+                                         'width' => '15%'));
+        }
+
+        if(!$row['hsize'] && !$row['hdate'])
+        {
+            $table->construct_cell("<img src=\"styles/{$page->style}/images/icons/no_change.gif\" alt=\"{$lang->hooks_nochange}\" />",
+                                   array('class' => 'align_center'));
+        }
+
+        else if(intval($row['hsize']) === @filesize(HOOKS_DATA) &&
+                intval($row['hdate']) === @filemtime(HOOKS_DATA))
+        {
+            $table->construct_cell("<img src=\"styles/{$page->style}/images/icons/tick.gif\" alt=\"{$lang->hooks_tick}\" />",
+                                   array('class' => 'align_center'));
+
+            $exportids[] = $row['hid'];
+        }
+
+        else if(intval($row['hsize']) == 0)
+        {
+            $table->construct_cell("<img src=\"styles/{$page->style}/images/icons/warning.gif\" alt=\"{$lang->hooks_warning}\" />",
+                                   array('class' => 'align_center'));
+        }
+
+        else
+        {
+            $table->construct_cell("<img src=\"styles/{$page->style}/images/icons/cross.gif\" alt=\"{$lang->hooks_cross}\" />",
+                                   array('class' => 'align_center'));
+        }
+
+        $table->construct_row();
+    }
+
     $createurl = $PL->url_append(HOOKS_URL, array('mode' => 'edit'));
     $importurl = $PL->url_append(HOOKS_URL, array('mode' => 'import'));
     $exporturl = $PL->url_append(HOOKS_URL, array('mode' => 'export',
@@ -353,7 +451,7 @@ function hooks_page_edit()
 
     $lang->load('hooks');
 
-    $hid = intval($mybb->input['hid']);
+    $hid = intval($mybb->input['hook']);
 
     if($mybb->request_method == 'post')
     {
@@ -467,9 +565,9 @@ function hooks_page_edit()
     $form = new Form($editurl, 'post');
     $form_container = new FormContainer($lang->hooks_edit);
 
-    echo $form->generate_hidden_field('hid',
-                                      intval($mybb->input['hid']),
-                                      array('id' => 'hid'));
+    echo $form->generate_hidden_field('hook',
+                                      intval($mybb->input['hook']),
+                                      array('id' => 'hook'));
 
     $form_container->output_row(
         $lang->hooks_hook,
