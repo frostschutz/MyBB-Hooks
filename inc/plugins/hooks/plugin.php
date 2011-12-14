@@ -185,7 +185,7 @@ function hooks_depend()
 /**
  * Add Hooks tab on the plugins page.
  */
-function hooks_tabs_start($arguments)
+function hooks_tabs_start(&$arguments)
 {
     global $mybb, $lang;
 
