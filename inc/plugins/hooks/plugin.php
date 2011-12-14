@@ -696,5 +696,248 @@ function hooks_page_edit()
     $page->output_footer();
 }
 
+/**
+ * Import hooks
+ */
+function hooks_page_import()
+{
+    global $mybb, $db, $lang, $page, $PL;
+    $PL or require_once PLUGINLIBRARY;
+
+    $importurl = $PL->url_append(HOOKS_URL, array('mode' => 'import'));
+
+    $page->add_breadcrumb_item($lang->hooks_import, $importurl);
+
+    if($mybb->request_method == 'post')
+    {
+        if($mybb->input['cancel'])
+        {
+            admin_redirect(HOOKS_URL);
+        }
+
+        if(@is_uploaded_file($_FILES['hooks']['tmp_name']))
+        {
+            $contents = @file_get_contents($_FILES['hooks']['tmp_name']);
+            @unlink($_FILES['hooks']['tmp_name']);
+
+            if($contents)
+            {
+                $contents = $PL->xml_import($contents);
+                $inserts = array();
+                $errors = 0;
+
+                if(is_array($contents))
+                {
+                    foreach($contents as $hook)
+                    {
+                        if(!is_array($hook))
+                        {
+                            $errors++;
+                            continue;
+                        }
+
+                        if(!is_string($hook['hhook'])
+                           || !strlen($hook['hhook'])
+                           || !is_string($hook['htitle'])
+                           || !strlen($hook['htitle'])
+                           || !is_int($hook['hpriority'])
+                           || !is_string($hook['hcode'])
+                           || !strlen($hook['hcode']))
+                        {
+                            $errors++;
+                            continue;
+                        }
+
+                        $inserts[] = array(
+                            'hactive' => '0',
+                            'hhook' => $db->escape_string($hook['hhook']),
+                            'htitle' => $db->escape_string($hook['htitle']),
+                            'hdescription' => $db->escape_string($hook['hdescription']),
+                            'hpriority' => intval($hook['hpriority']),
+                            'hcode' => $db->escape_string($hook['hcode']),
+                            );
+                    }
+                }
+
+                if(count($inserts))
+                {
+                    $db->insert_query_multiple('hooks', $inserts);
+
+                    $success = $lang->sprintf($lang->hooks_import_success,
+                                              count($inserts));
+
+                    if($errors)
+                    {
+                        $success .= $lang->sprintf($lang->hooks_import_errors,
+                                                   $errors);
+                    }
+
+                    flash_message($success, 'success');
+                    admin_redirect(HOOKS_URL);
+                }
+            }
+        }
+
+        if(is_array($inserts) || $errors)
+        {
+            flash_message($lang->hooks_import_badfile, 'error');
+        }
+
+        else
+        {
+            flash_message($lang->hooks_import_nofile, 'error');
+        }
+    }
+
+    hooks_output_header();
+    hooks_output_tabs();
+
+    $table = new Table;
+
+    $table->construct_header($lang->hooks);
+
+    $form = new Form($importurl, 'post', '', 1);
+
+    $table->construct_cell($lang->hooks_import_file
+                           .'<br /><br />'
+                           .$form->generate_file_upload_box("hooks"));
+    $table->construct_row();
+
+    $table->output($lang->hooks_import_caption);
+
+    $buttons[] = $form->generate_submit_button($lang->hooks_import_button);
+    $buttons[] = $form->generate_submit_button($lang->hooks_cancel,
+                                               array('name' => 'cancel'));
+    $form->output_submit_wrapper($buttons);
+
+    $page->output_footer();
+}
+
+/**
+ * Export hooks
+ */
+function hooks_page_export()
+{
+    global $mybb, $db, $lang, $page, $PL;
+
+    $PL or require_once PLUGINLIBRARY;
+
+    $exporturl = $PL->url_append(HOOKS_URL, array('mode' => 'export'));
+
+    $page->add_breadcrumb_item($lang->hooks_export, $exporturl);
+
+    if($mybb->request_method == 'post')
+    {
+        if($mybb->input['cancel'])
+        {
+            admin_redirect(HOOKS_URL);
+        }
+
+        if($mybb->input['filename'])
+        {
+            $filename = $mybb->input['filename'];
+            $filename = str_replace('/', '_', $filename);
+            $filename = str_replace('\\', '_', $filename);
+            $filename = str_replace('.', '_', $filename);
+            $filename = "hooks-{$filename}.xml";
+        }
+
+        else
+        {
+            $filename = "hooks.xml";
+        }
+
+        if($mybb->input['hooks'])
+        {
+            $where = array();
+
+            foreach((array)$mybb->input['hooks'] as $hid)
+            {
+                $where[] = $db->escape_string(strval($hid));
+            }
+
+            $where = implode("','", $where);
+            $where = "hid IN ('{$where}')";
+
+            $query = $db->simple_select("hooks",
+                                        "hhook,htitle,hdescription,hpriority,hcode",
+                                        $where,
+                                        array('order_by' => 'hhook,htitle,hid'));
+
+            $hooks = array();
+
+            while($row = $db->fetch_array($query))
+            {
+                $row['hpriority'] = intval($row['hpriority']);
+                $hooks[] = $row;
+            }
+
+            if(count($hooks))
+            {
+                $PL->xml_export($hooks, $filename, 'MyBB Hooks exported {time}');
+                // exit on success
+            }
+        }
+
+        flash_message($lang->hooks_export_error, 'error');
+    }
+
+    else if($mybb->input['hook'])
+    {
+        $hooks = array();
+
+        foreach(explode(",", $mybb->input['hook']) as $hid)
+        {
+            $hooks[] = htmlspecialchars($hid);
+        }
+    }
+
+    hooks_output_header();
+    hooks_output_tabs();
+
+    // Build list of hooks
+    $hooks_selects = array();
+    $currenthook = '';
+
+    $query = $db->simple_select('hooks', 'hhook,htitle,hid', '',
+                                array('order_by' => 'hhook,htitle,hid'));
+
+    while($row = $db->fetch_array($query))
+    {
+        if($currenthook != $row['hhook'])
+        {
+            $currenthook = $row['hhook'];
+            $hooks_selects["hook{$row['hid']}"] = '&nbsp;&nbsp;&nbsp;--- '.htmlspecialchars($currenthook).' ---';
+        }
+
+        $hooks_selects[$row['hid']] = htmlspecialchars($row['htitle']);
+    }
+
+    $table = new Table;
+
+    $table->construct_header($lang->hooks);
+
+    $form = new Form($exporturl, "post");
+
+    $table->construct_cell($lang->hooks_export_select
+                           .'<br /><br />'
+                           .$form->generate_select_box("hooks[]", $hooks_selects, $hooks, array('multiple' => true, 'id' => 'hooks_select')));
+    $table->construct_row();
+
+    $table->construct_cell($lang->hooks_export_filename
+                           .'<br /><br />'
+                           .$form->generate_text_box('filename', $mybb->input['filename']));
+    $table->construct_row();
+
+    $table->output($lang->hooks_export_caption);
+
+    $buttons[] = $form->generate_submit_button($lang->hooks_export_button);
+    $buttons[] = $form->generate_submit_button($lang->hooks_cancel,
+                                               array('name' => 'cancel'));
+    $form->output_submit_wrapper($buttons);
+
+    $page->output_footer();
+}
+
 /* --- End of file. --- */
 ?>
