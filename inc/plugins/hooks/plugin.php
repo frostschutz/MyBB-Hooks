@@ -172,7 +172,7 @@ function hooks_depend()
 
     $PL or require_once PLUGINLIBRARY;
 
-    if($PL->version < 4)
+    if($PL->version < 5)
     {
         flash_message($lang->hooks_PL_old, 'error');
         admin_redirect("index.php?module=config-plugins");
@@ -310,6 +310,69 @@ function hooks_output_preview()
 }
 
 /* --- Actions: --- */
+
+function hooks_action_activate()
+{
+    global $mybb, $db, $lang;
+
+    if(!verify_post_check($mybb->input['my_post_key']))
+    {
+        flash_message($lang->hooks_error_key, 'error');
+        admin_redirect(HOOKS_URL);
+    }
+
+    $hook = intval($mybb->input['hook']);
+
+    if($hook)
+    {
+        $db->update_query('hooks', array('hactive' => '1'), "hid={$hook}");
+        flash_message($lang->hooks_activated, 'success');
+    }
+
+    admin_redirect(HOOKS_URL);
+}
+
+function hooks_action_deactivate()
+{
+    global $mybb, $db, $lang;
+
+    if(!verify_post_check($mybb->input['my_post_key']))
+    {
+        flash_message($lang->hooks_error_key, 'error');
+        admin_redirect(HOOKS_URL);
+    }
+
+    $hook = intval($mybb->input['hook']);
+
+    if($hook)
+    {
+        $db->update_query('hooks', array('hactive' => '0'), "hid={$hook}");
+        flash_message($lang->hooks_deactivated, 'success');
+    }
+
+    admin_redirect(HOOKS_URL);
+}
+
+function hooks_action_delete()
+{
+    global $mybb, $db, $lang;
+
+    if(!verify_post_check($mybb->input['my_post_key']))
+    {
+        flash_message($lang->hooks_error_key, 'error');
+        admin_redirect(HOOKS_URL);
+    }
+
+    $hook = intval($mybb->input['hook']);
+
+    if($hook)
+    {
+        $db->delete_query('hooks', "hid={$hook}");
+        flash_message($lang->hooks_deleted, 'success');
+    }
+
+    admin_redirect(HOOKS_URL);
+}
 
 /* --- Pages: --- */
 
