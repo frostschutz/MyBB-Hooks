@@ -288,6 +288,28 @@ function hooks_output_header()
     $page->output_header('Hooks');
 }
 
+/**
+ * Output preview.
+ */
+function hooks_output_preview()
+{
+    global $mybb, $lang;
+
+    require_once MYBB_ROOT."inc/class_parser.php";
+    $parser = new postParser;
+
+    $code = str_replace("\n", "\n    ", "\n{$mybb->input['hcode']}");
+    $code = substr($code, 1);
+    $code = $parser->mycode_parse_php(
+        "function hooks_{$mybb->input['hhook']}(&\$arg)\n{\n{$code}\n}",
+        true);
+
+    $table = new Table;
+    $table->construct_cell($code);
+    $table->construct_row();
+    $table->output($lang->hooks_preview_output);
+}
+
 /* --- Actions: --- */
 
 /* --- Pages: --- */

@@ -44,6 +44,7 @@ $l = array(
     'hooks_legend_tick' => 'Hook is enabled and active',
     'hooks_new' => 'Add a new Hook...',
     'hooks_preview' => 'Preview Hook',
+    'hooks_preview_output' => 'Preview',
     'hooks_priority' => 'Priority',
     'hooks_priority_desc' => 'Specify the priority of this hook. Default value is 10. Lower value means higher priority.',
     'hooks_save' => 'Save Hook',
