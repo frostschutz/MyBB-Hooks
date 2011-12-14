@@ -107,19 +107,18 @@ function hooks_install()
             CREATE TABLE {$quote}{$prefix}hooks{$quote}
             (
                 hid {$primary},
+                hactive TINYINT UNSIGNED NOT NULL,
+                hpriority BIGINT NOT NULL,
+                hhook VARCHAR(150) NOT NULL,
                 htitle VARCHAR(100) NOT NULL,
                 hdescription VARCHAR(200),
-                hhook VARCHAR(150) NOT NULL,
-                hpriority BIGINT NOT NULL,
-                hsize BIGINT NOT NULL,
-                hdate BIGINT NOT NULL,
                 hcode TEXT NOT NULL,
                 PRIMARY KEY (hid)
             ) {$collation}");
 
-        $db->write_query("CREATE INDEX hsizedate
+        $db->write_query("CREATE INDEX hactivehookpriority
                           ON {$quote}{$prefix}hooks{$quote}
-                          (hsize, hdate)");
+                          (hactive,hhook,hpriority)");
     }
 }
 
@@ -335,7 +334,7 @@ function hooks_page()
                                    'width' => '30%'));
 
     $query = $db->simple_select('hooks',
-                                'hid,hpriority,hhook,htitle,hdescription,hsize,hdate',
+                                'hid,hpriority,hhook,htitle,hdescription,hactive',
                                 '',
                                 array('order_by' => 'hhook,hpriority,htitle,hid'));
 
@@ -361,7 +360,7 @@ function hooks_page()
         $delete = '';
 
 
-        if(!$row['hsize'] && !$row['hdate'])
+        if(!$row['hactive'])
         {
             $deleteurl = $PL->url_append(HOOKS_URL,
                                          array('mode' => 'delete',
@@ -378,7 +377,7 @@ function hooks_page()
                                .htmlspecialchars($row['hdescription'])
                                .'</div>');
 
-        if(!$row['hsize'])
+        if(!$row['hactive'])
         {
             $activateurl = $PL->url_append(HOOKS_URL,
                                            array('mode' => 'activate',
@@ -402,25 +401,12 @@ function hooks_page()
                                          'width' => '15%'));
         }
 
-        if(!$row['hsize'] && !$row['hdate'])
-        {
-            $table->construct_cell("<img src=\"styles/{$page->style}/images/icons/no_change.gif\" alt=\"{$lang->hooks_nochange}\" />",
-                                   array('class' => 'align_center'));
-        }
-
-        else if(intval($row['hsize']) === @filesize(HOOKS_DATA) &&
-                intval($row['hdate']) === @filemtime(HOOKS_DATA))
+        if($row['hactive'])
         {
             $table->construct_cell("<img src=\"styles/{$page->style}/images/icons/tick.gif\" alt=\"{$lang->hooks_tick}\" />",
                                    array('class' => 'align_center'));
 
             $exportids[] = $row['hid'];
-        }
-
-        else if(intval($row['hsize']) == 0)
-        {
-            $table->construct_cell("<img src=\"styles/{$page->style}/images/icons/warning.gif\" alt=\"{$lang->hooks_warning}\" />",
-                                   array('class' => 'align_center'));
         }
 
         else
@@ -527,7 +513,6 @@ function hooks_page_edit()
                 'hhook' => $db->escape_string($hook),
                 'hpriority' => $priority,
                 'hcode' => $db->escape_string($code),
-                'hdate' => 1,
                 );
 
             if($hid)
@@ -539,8 +524,6 @@ function hooks_page_edit()
 
             if(!$update)
             {
-                $data['hsize'] = 0;
-                $data['hdate'] = 0;
                 $db->insert_query('hooks', $data);
             }
 
