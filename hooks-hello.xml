@@ -60,7 +60,7 @@
         <element>
           <key>hcode</key>
           <value><![CDATA[    $page = str_replace("<div id=\"content\">", "<div id=\"content\"><p>Hello Hooks!<br />This is a sample Hooks Plugin hook (which can be disabled!) that displays this message on all pages.</p>", $page);
-	return $page;]]></value>
+    return $page;]]></value>
         </element>
       </array>
     </value>
