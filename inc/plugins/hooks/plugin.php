@@ -56,7 +56,7 @@ function hooks_info()
         'author'        => 'Andreas Klauer',
         'authorsite'    => 'mailto:Andreas.Klauer@metamorpher.de',
         'version'       => '1.0',
-        'guid'          => '',
+        'guid'          => '51897afbd949d567b9bf97e44800e508',
         'compatibility' => '16*',
     );
 }
