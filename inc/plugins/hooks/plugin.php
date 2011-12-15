@@ -440,13 +440,13 @@ function hooks_action_activate()
 
             else
             {
-                flash_message($lang->hooks_error_faulty);
+                flash_message($lang->hooks_error_faulty, 'error');
             }
         }
 
         else
         {
-            flash_message($lang->hooks_error_missing);
+            flash_message($lang->hooks_error_missing, 'error');
         }
     }
 
