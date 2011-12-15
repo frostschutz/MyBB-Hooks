@@ -145,6 +145,7 @@ function hooks_uninstall()
 function hooks_activate()
 {
     hooks_depend();
+    hooks_update_data();
 }
 
 /**
@@ -152,7 +153,9 @@ function hooks_activate()
  */
 function hooks_deactivate()
 {
-    // do nothing
+    // truncate the hooks file
+    // activate recreates it from the DB
+    @unlink(HOOKS_DATA);
 }
 
 
@@ -178,6 +181,15 @@ function hooks_depend()
     if($PL->version < 5)
     {
         flash_message($lang->hooks_PL_old, 'error');
+        admin_redirect("index.php?module=config-plugins");
+    }
+
+    if((file_exists(HOOKS_DATA) && !@is_writable(HOOKS_DATA)) ||
+       (!file_exists(HOOKS_DATA) && !@is_writable(dirname(HOOKS_DATA))))
+    {
+        $lackperms = $lang->sprintf($lang->hooks_error_write_permission,
+                                    HOOKS_DATA);
+        flash_message($lackperms, 'error');
         admin_redirect("index.php?module=config-plugins");
     }
 }

@@ -47,6 +47,7 @@ $l = array(
     'hooks_error_missing' => 'The specified hook does not exist.',
     'hooks_error_syntax' => 'There is a syntax error in your code.',
     'hooks_error_title' => 'No title specified.',
+    'hooks_error_write_permission' => "Write permission for '{1}' is missing.",
     'hooks_export' => 'Export',
     'hooks_export_button' => 'Perform Export',
     'hooks_export_caption' => 'Export Hooks',
