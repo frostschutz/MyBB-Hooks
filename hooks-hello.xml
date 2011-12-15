@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- MyBB Hooks exported 2011-12-15T00:44:35+00:00 -->
+<array>
+  <element>
+    <key type="INT">0</key>
+    <value>
+      <array>
+        <element>
+          <key>hhook</key>
+          <value>postbit</value>
+        </element>
+        <element>
+          <key>htitle</key>
+          <value>Hello Hooks! Postbit</value>
+        </element>
+        <element>
+          <key>hdescription</key>
+          <value>Example hook which is identical to the Hello World postbit hook from the hello.php plugin.</value>
+        </element>
+        <element>
+          <key>hpriority</key>
+          <value type="INT">10</value>
+        </element>
+        <element>
+          <key>hargument</key>
+          <value>post</value>
+        </element>
+        <element>
+          <key>hcode</key>
+          <value><![CDATA[    $post['message'] = "<strong>Hello Hooks!</strong><br /><br />{$post['message']}";
+]]></value>
+        </element>
+      </array>
+    </value>
+  </element>
+  <element>
+    <key type="INT">1</key>
+    <value>
+      <array>
+        <element>
+          <key>hhook</key>
+          <value>pre_output_page</value>
+        </element>
+        <element>
+          <key>htitle</key>
+          <value>Hello Hooks!</value>
+        </element>
+        <element>
+          <key>hdescription</key>
+          <value>Example hook which is identical to the Hello World hook from the hello.php plugin.</value>
+        </element>
+        <element>
+          <key>hpriority</key>
+          <value type="INT">10</value>
+        </element>
+        <element>
+          <key>hargument</key>
+          <value>page</value>
+        </element>
+        <element>
+          <key>hcode</key>
+          <value><![CDATA[    $page = str_replace("<div id=\"content\">", "<div id=\"content\"><p>Hello Hooks!<br />This is a sample Hooks Plugin hook (which can be disabled!) that displays this message on all pages.</p>", $page);
+	return $page;]]></value>
+        </element>
+      </array>
+    </value>
+  </element>
+</array>
+<!-- End of file. -->
