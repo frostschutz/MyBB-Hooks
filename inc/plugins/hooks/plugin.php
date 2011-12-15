@@ -112,6 +112,7 @@ function hooks_install()
                 hhook VARCHAR(150) NOT NULL,
                 htitle VARCHAR(100) NOT NULL,
                 hdescription VARCHAR(200),
+                hargument VARCHAR(50),
                 hcode TEXT NOT NULL,
                 PRIMARY KEY (hid)
             ) {$collation}");
@@ -188,7 +189,7 @@ function hooks_update_data()
 {
     global $db;
 
-    $query = $db->simple_select('hooks', 'hid,hhook,hpriority,hcode,htitle',
+    $query = $db->simple_select('hooks', 'hid,hhook,hpriority,hargument,hcode,htitle',
                                 'hactive=1',
                                 array('order_by' => 'hhook,hpriority,hid'));
 
@@ -196,9 +197,19 @@ function hooks_update_data()
     {
         $row['htitle'] = strtr($row['htitle'], array('*/', '* /'));
 
+        if($row['hargument'])
+        {
+            $arg = "&\${$row['hargument']}";
+        }
+
+        else
+        {
+            $arg = '';
+        }
+
         $output[] = "\n/* --- Hook #{$row['hid']} - {$row['htitle']} --- */\n\n"
             ."\$plugins->add_hook('{$row['hhook']}','hooks_{$row['hhook']}_{$row['hid']}',{$row['hpriority']});\n\n"
-            ."function hooks_{$row['hhook']}_{$row['hid']}(&\$arg)\n{\n"
+            ."function hooks_{$row['hhook']}_{$row['hid']}({$arg})\n{\n"
             .$row['hcode']
             ."\n}\n";
     }
@@ -335,10 +346,20 @@ function hooks_output_preview()
     require_once MYBB_ROOT."inc/class_parser.php";
     $parser = new postParser;
 
+    if(strlen($mybb->input['hargument']))
+    {
+        $arg = "&\${$mybb->input['hargument']}";
+    }
+
+    else
+    {
+        $arg = "";
+    }
+
     $code = str_replace("\n", "\n    ", "\n{$mybb->input['hcode']}");
     $code = substr($code, 1);
     $code = $parser->mycode_parse_php(
-        "function hooks_{$mybb->input['hhook']}(&\$arg)\n{\n{$code}\n}",
+        "function hooks_{$mybb->input['hhook']}({$arg})\n{\n{$code}\n}",
         true);
 
     $table = new Table;
@@ -583,6 +604,11 @@ function hooks_page_edit()
             $errors[] = $lang->hooks_error_hook;
         }
 
+        if(@create_function('', "function hooks_{$hook}(){}") === false)
+        {
+            $errors[] = $lang->hooks_error_hook_invalid;
+        }
+
         $title = trim($mybb->input['htitle']);
 
         if(!$title)
@@ -609,6 +635,34 @@ function hooks_page_edit()
             $errors[] = $lang->hooks_error_code;
         }
 
+        $argument = $mybb->input['hargument'];
+
+        if(!strlen($argument))
+        {
+            $argument = '';
+        }
+
+        // Validate the PHP code itself.
+        if($argument)
+        {
+            $arg = "&\${$argument}";
+        }
+
+        else
+        {
+            $arg = '';
+        }
+
+        if($args && @create_function($arg, '1+1;') == false)
+        {
+            $errors[] = $lang->hooks_error_argument;
+        }
+
+        else if(@create_function($arg, $code) == false)
+        {
+            $errors[] = $lang->hooks_error_syntax;
+        }
+
         if(!$errors && !$mybb->input['preview'])
         {
             $data = array(
@@ -617,6 +671,7 @@ function hooks_page_edit()
                 'hhook' => $db->escape_string($hook),
                 'hpriority' => $priority,
                 'hcode' => $db->escape_string($code),
+                'hargument' => $db->escape_string($argument),
                 );
 
             if($hid)
@@ -631,6 +686,9 @@ function hooks_page_edit()
                 $db->insert_query('hooks', $data);
             }
 
+            // Update in case an active hook was edited.
+            hooks_update_data();
+
             flash_message($lang->hooks_saved, 'success');
             admin_redirect(HOOKS_URL);
         }
@@ -643,7 +701,7 @@ function hooks_page_edit()
     {
         // fetch info of existing hook
         $query = $db->simple_select('hooks',
-                                    'htitle,hdescription,hhook,hpriority,hcode',
+                                    'htitle,hdescription,hhook,hpriority,hargument,hcode',
                                     "hid='{$hid}'");
         $row = $db->fetch_array($query);
 
@@ -666,7 +724,7 @@ function hooks_page_edit()
         $page->output_inline_error($errors);
     }
 
-    else if($preview)
+    if($preview)
     {
         hooks_output_preview();
     }
@@ -712,6 +770,15 @@ function hooks_page_edit()
                                  $mybb->input['hpriority'],
                                  array('id' => 'hpriority')),
         'hpriority'
+        );
+
+    $form_container->output_row(
+        $lang->hooks_argument,
+        $lang->hooks_argument_desc,
+        $form->generate_text_box('hargument',
+                                 $mybb->input['hargument'],
+                                 array('id' => 'hargument')),
+        'hargument'
         );
 
     $form_container->output_row(
@@ -783,7 +850,8 @@ function hooks_page_import()
                            || !strlen($hook['htitle'])
                            || !is_int($hook['hpriority'])
                            || !is_string($hook['hcode'])
-                           || !strlen($hook['hcode']))
+                           || !strlen($hook['hcode'])
+                           || !is_string($hook['hargument']))
                         {
                             $errors++;
                             continue;
@@ -795,6 +863,7 @@ function hooks_page_import()
                             'htitle' => $db->escape_string($hook['htitle']),
                             'hdescription' => $db->escape_string($hook['hdescription']),
                             'hpriority' => intval($hook['hpriority']),
+                            'hargument' => $db->escape_string($hook['hargument']),
                             'hcode' => $db->escape_string($hook['hcode']),
                             );
                     }
@@ -901,7 +970,7 @@ function hooks_page_export()
             $where = "hid IN ('{$where}')";
 
             $query = $db->simple_select("hooks",
-                                        "hhook,htitle,hdescription,hpriority,hcode",
+                                        "hhook,htitle,hdescription,hpriority,hargument,hcode",
                                         $where,
                                         array('order_by' => 'hhook,htitle,hid'));
 
