@@ -195,17 +195,11 @@ function hooks_depend()
 }
 
 /**
- * Create / Update data file
+ * Generate code segment.
  */
-function hooks_update_data()
+function hooks_generate_code($hooks, $prefix='hooks')
 {
-    global $db;
-
-    $query = $db->simple_select('hooks', 'hid,hhook,hpriority,hargument,hcode,htitle',
-                                'hactive=1',
-                                array('order_by' => 'hhook,hpriority,hid'));
-
-    while($row = $db->fetch_array($query))
+    foreach($hooks as $row)
     {
         $row['htitle'] = strtr($row['htitle'], array('*/', '* /'));
 
@@ -220,10 +214,36 @@ function hooks_update_data()
         }
 
         $output[] = "\n/* --- Hook #{$row['hid']} - {$row['htitle']} --- */\n\n"
-            ."\$plugins->add_hook('{$row['hhook']}','hooks_{$row['hhook']}_{$row['hid']}',{$row['hpriority']});\n\n"
-            ."function hooks_{$row['hhook']}_{$row['hid']}({$arg})\n{\n"
+            ."\$plugins->add_hook('{$row['hhook']}','{$prefix}_{$row['hhook']}_{$row['hid']}',{$row['hpriority']});\n\n"
+            ."function {$prefix}_{$row['hhook']}_{$row['hid']}({$arg})\n{\n"
             .$row['hcode']
             ."\n}\n";
+    }
+
+    return $output;
+}
+
+/**
+ * Create / Update data file
+ */
+function hooks_update_data()
+{
+    global $db;
+
+    $query = $db->simple_select('hooks', 'hid,hhook,hpriority,hargument,hcode,htitle',
+                                'hactive=1',
+                                array('order_by' => 'hhook,hpriority,hid'));
+
+    while($row = $db->fetch_array($query))
+    {
+        $hooks[] = $row;
+    }
+
+    $output = array();
+
+    if(count($hooks))
+    {
+        $output = hooks_generate_code($hooks);
     }
 
     $data = fopen(HOOKS_DATA, 'w');
@@ -982,6 +1002,8 @@ function hooks_page_export()
 
     if($mybb->request_method == 'post')
     {
+        $errors  = array();
+
         if($mybb->input['cancel'])
         {
             admin_redirect(HOOKS_URL);
@@ -1003,6 +1025,8 @@ function hooks_page_export()
 
         if($mybb->input['hooks'])
         {
+            $mybb->input['hook'] = implode(',', $mybb->input['hooks']);
+
             $where = array();
 
             foreach((array)$mybb->input['hooks'] as $hid)
@@ -1014,7 +1038,7 @@ function hooks_page_export()
             $where = "hid IN ('{$where}')";
 
             $query = $db->simple_select("hooks",
-                                        "hhook,htitle,hdescription,hpriority,hargument,hcode",
+                                        "hhook,htitle,hdescription,hpriority,hargument,hcode,hid",
                                         $where,
                                         array('order_by' => 'hhook,htitle,hid'));
 
@@ -1028,15 +1052,32 @@ function hooks_page_export()
 
             if(count($hooks))
             {
-                $PL->xml_export($hooks, $filename, 'MyBB Hooks exported {time}');
-                // exit on success
+                if($mybb->input['plugin'])
+                {
+                    hooks_export_plugin($hooks, $errors);
+                }
+
+                else
+                {
+                    $PL->xml_export($hooks, $filename, 'MyBB Hooks exported {time}');
+                }
+
+                // Exit on success.
+            }
+
+            else
+            {
+                $errors[] = $lang->hooks_export_error;
             }
         }
 
-        flash_message($lang->hooks_export_error, 'error');
+        else
+        {
+            $errors[] = $lang->hooks_export_error;
+        }
     }
 
-    else if($mybb->input['hook'])
+    if($mybb->input['hook'])
     {
         $hooks = array();
 
@@ -1046,8 +1087,18 @@ function hooks_page_export()
         }
     }
 
+    // Input field defaults
+    $mybb->input = array_replace(array('compatibility' => '16*',
+                                       'version' => '1.0'),
+                                 $mybb->input);
+
     hooks_output_header();
     hooks_output_tabs();
+
+    if($errors)
+    {
+        $page->output_inline_error($errors);
+    }
 
     // Build list of hooks
     $hooks_selects = array();
@@ -1067,11 +1118,11 @@ function hooks_page_export()
         $hooks_selects[$row['hid']] = htmlspecialchars($row['htitle']);
     }
 
+    $form = new Form($exporturl, "post");
+
     $table = new Table;
 
-    $table->construct_header($lang->hooks);
-
-    $form = new Form($exporturl, "post");
+//    $table->construct_header($lang->hooks);
 
     $table->construct_cell($lang->hooks_export_select
                            .'<br /><br />'
@@ -1083,14 +1134,161 @@ function hooks_page_export()
                            .$form->generate_text_box('filename', $mybb->input['filename']));
     $table->construct_row();
 
+    $buttons = array($form->generate_submit_button($lang->hooks_export_button),
+                     $form->generate_submit_button($lang->hooks_export_plugin_button,
+                                                   array('name' => 'plugin')),
+                     $form->generate_submit_button($lang->hooks_cancel,
+                                                   array('name' => 'cancel')));
     $table->output($lang->hooks_export_caption);
-
-    $buttons[] = $form->generate_submit_button($lang->hooks_export_button);
-    $buttons[] = $form->generate_submit_button($lang->hooks_cancel,
-                                               array('name' => 'cancel'));
     $form->output_submit_wrapper($buttons);
 
+    echo "<br />";
+
+    // --- plugin export fields: ---
+
+    $table = new Table;
+
+    $table->construct_cell($lang->hooks_export_plugin_name
+                           .'<br /><br />'
+                           .$form->generate_text_box('name', $mybb->input['name']));
+    $table->construct_row();
+
+    $table->construct_cell($lang->hooks_export_plugin_description
+                           .'<br /><br />'
+                           .$form->generate_text_box('description', $mybb->input['description']));
+    $table->construct_row();
+
+    $table->construct_cell($lang->hooks_export_plugin_website
+                           .'<br /><br />'
+                           .$form->generate_text_box('website', $mybb->input['website']));
+    $table->construct_row();
+
+    $table->construct_cell($lang->hooks_export_plugin_author
+                           .'<br /><br />'
+                           .$form->generate_text_box('author', $mybb->input['author']));
+    $table->construct_row();
+
+    $table->construct_cell($lang->hooks_export_plugin_authorsite
+                           .'<br /><br />'
+                           .$form->generate_text_box('authorsite', $mybb->input['authorsite']));
+    $table->construct_row();
+
+    $table->construct_cell($lang->hooks_export_plugin_version
+                           .'<br /><br />'
+                           .$form->generate_text_box('version', $mybb->input['version']));
+    $table->construct_row();
+
+    $table->construct_cell($lang->hooks_export_plugin_guid
+                           .'<br /><br />'
+                           .$form->generate_text_box('guid', $mybb->input['guid']));
+    $table->construct_row();
+
+    $table->construct_cell($lang->hooks_export_plugin_compatibility
+                           .'<br /><br />'
+                           .$form->generate_text_box('compatibility', $mybb->input['compatibility']));
+    $table->construct_row();
+
+    $table->output($lang->hooks_export_plugin_caption);
+
+    $form->output_submit_wrapper($buttons);
+    $form->end();
+
     $page->output_footer();
+}
+
+function hooks_export_plugin($hooks, &$errors)
+{
+    global $mybb, $lang;
+
+    $validate = array();
+    $data = "";
+
+    // Validate input.
+
+    if(!strlen($mybb->input['filename']))
+    {
+        $errors[] = $lang->hooks_export_plugin_error_filename;
+    }
+
+    else
+    {
+        $filename = "{$mybb->input['filename']}.php";
+        $prefix = $mybb->input['filename'];
+
+        hooks_validate("{$prefix}_suffix", '', '', $validate);
+
+        if(count($validate))
+        {
+            $errors[] = $lang->hooks_export_plugin_error_prefix;
+        }
+    }
+
+    if(!strlen($mybb->input['name']))
+    {
+        $errors[] = $lang->hooks_export_plugin_error_name;
+    }
+
+    if(!strlen($mybb->input['author']))
+    {
+        $errors[] = $lang->hooks_export_plugin_error_author;
+    }
+
+    if(!strlen($mybb->input['version']))
+    {
+        $errors[] = $lang->hooks_export_plugin_error_version;
+    }
+
+    if(!strlen($mybb->input['compatibility']))
+    {
+        $errors[] = $lang->hooks_export_plugin_error_compatibility;
+    }
+
+    if(count($errors))
+    {
+        return;
+    }
+
+    // Generate Plugin Code
+    $output = hooks_generate_code($hooks, $prefix);
+
+    // Output PHP.
+    $date = gmdate('D, d M Y H:i:s T');
+
+    @header('Content-Type: application/text; charset=UTF-8');
+    @header('Expires: Sun, 20 Feb 2011 13:47:47 GMT'); // past
+    @header("Last-Modified: {$date}");
+    @header('Pragma: no-cache');
+    @header('Content-Disposition: attachment; filename="'.$filename.'"');
+
+    echo "<?php\n/* Exported by Hooks plugin {$date} */\n\n";
+    echo "if(!defined('IN_MYBB'))\n{\n    die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');\n}\n\n";
+    echo "/* --- Plugin API: --- */\n\n";
+
+    $info = array(
+        "name" => strval($mybb->input['name']),
+        "description" => strval($mybb->input['description']),
+        "website" => strval($mybb->input['website']),
+        "author" => strval($mybb->input['author']),
+        "authorsite" => strval($mybb->input['authorsite']),
+        "version" => strval($mybb->input['version']),
+        "guid" => strval($mybb->input['guid']),
+        "compatibility" => strval($mybb->input['compatibility']),
+    );
+
+    echo "function {$prefix}_info()\n{\n    return ";
+
+    var_export($info);
+
+    echo ";\n}\n\n/**\n * function {$prefix}_activate()\n * function {$prefix}_deactivate()\n * function {$prefix}_is_installed()\n * function {$prefix}_install()\n * function {$prefix}_uninstall()\n */\n\n\n/* --- Hooks: --- */\n";
+
+    foreach($output as $code)
+    {
+        echo $code;
+    }
+
+    echo "\n/* Exported by Hooks plugin {$date} */\n?>\n";
+
+    exit;
 }
 
 /* --- End of file. --- */
