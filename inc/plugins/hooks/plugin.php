@@ -55,7 +55,7 @@ function hooks_info()
         'website'       => 'http://mods.mybb.com/view/hooks',
         'author'        => 'Andreas Klauer',
         'authorsite'    => 'mailto:Andreas.Klauer@metamorpher.de',
-        'version'       => '1.0',
+        'version'       => '1.1',
         'guid'          => '51897afbd949d567b9bf97e44800e508',
         'compatibility' => '16*',
     );
