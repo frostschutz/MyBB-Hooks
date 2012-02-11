@@ -307,10 +307,10 @@ function hooks_tabs_start(&$arguments)
 {
     global $mybb, $lang;
 
-    $lang->load('hooks');
-
     if($mybb->input['module'] == 'config-plugins')
     {
+        $lang->load('hooks');
+
         $arguments['hooks'] = array('title' => $lang->hooks,
                                     'description' => $lang->hooks_tab_desc,
                                     'link' => HOOKS_URL);
