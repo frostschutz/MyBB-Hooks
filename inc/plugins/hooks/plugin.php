@@ -263,14 +263,48 @@ function hooks_update_data()
 /**
  * Validate code.
  *
- * Abusing create_function() is a crude way to do it but it works... for now.
+ * PHP offers little in terms of safe code validation.
+ * create_function() is a false friend: it's just another eval().
+ * These crude tests are all eval() based and may execute arbitrary code.
+ * Not a problem as anyone who creates hooks executes arbitrary code anyway.
  */
+function hooks_create_function($arg, $code)
+{
+    $result = true;
+
+    if(version_compare(PHP_VERSION, '5.3.0', '>='))
+    {
+        // closure test.
+        $result = @eval("return function({$arg}) { {$code} };");
+    }
+
+    if($result !== false)
+    {
+        // blind if test.
+        $result = @eval("if(0) { function xy({$arg}) { {$code} } } return 1;");
+    }
+
+    if($result !== false)
+    {
+        // blind if class test.
+        $result = @eval("if(0) { class x { function y({$arg}) { {$code} } } } return 1;");
+    }
+
+    if($result !== false)
+    {
+        // create_function test.
+        $result = @create_function($arg, $code);
+    }
+
+    return $result !== false;
+}
+
 function hooks_validate($hook, $arg, $code, &$errors)
 {
     global $lang;
 
     // Validate Hook Name
-    if(@create_function('', "function hooks_{$hook}(){}") === false)
+    if(hooks_create_function('', "function hooks_{$hook}(){}") === false)
     {
         $errors[] = $lang->hooks_error_hook_invalid;
     }
@@ -286,13 +320,13 @@ function hooks_validate($hook, $arg, $code, &$errors)
         $arg = '';
     }
 
-    if($arg && @create_function($arg, '') == false)
+    if($arg && hooks_create_function($arg, '') == false)
     {
         $errors[] = $lang->hooks_error_argument;
     }
 
     // Validate Code
-    if(@create_function('', $code) == false)
+    if(hooks_create_function('', $code) == false)
     {
         $errors[] = $lang->hooks_error_syntax;
     }
