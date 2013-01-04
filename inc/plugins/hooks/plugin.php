@@ -128,7 +128,26 @@ function hooks_install()
  */
 function hooks_uninstall()
 {
-    global $db;
+    global $mybb, $db, $lang;
+    global $PL;
+
+    hooks_depend();
+
+    // Confirmation step.
+    if(!$mybb->input['confirm'])
+    {
+        $link = $PL->url_append('index.php', array(
+                                    'module' => 'config-plugins',
+                                    'action' => 'deactivate',
+                                    'uninstall' => '1',
+                                    'plugin' => 'hooks',
+                                    'my_post_key' => $mybb->post_code,
+                                    'confirm' => '1',
+                                    ));
+
+        flash_message("{$lang->hooks_plugin_uninstall} <a href=\"{$link}\">{$lang->hooks_plugin_uninstall_confirm}</a>", "error");
+        admin_redirect("index.php?module=config-plugins");
+    }
 
     if($db->table_exists('hooks'))
     {
