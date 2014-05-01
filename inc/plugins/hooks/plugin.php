@@ -55,7 +55,7 @@ function hooks_info()
         'website'       => 'http://mods.mybb.com/view/hooks',
         'author'        => 'Andreas Klauer',
         'authorsite'    => 'mailto:Andreas.Klauer@metamorpher.de',
-        'version'       => '1.2',
+        'version'       => '1.5',
         'guid'          => '51897afbd949d567b9bf97e44800e508',
         'compatibility' => '16*',
     );
@@ -598,11 +598,11 @@ function hooks_page()
     $exportids = array();
 
     $table = new Table;
-    $table->construct_header($lang->hooks_hook);
     $table->construct_header($lang->hooks_controls,
-                             array('colspan' => 3,
-                                   'class' => 'align_center',
-                                   'width' => '30%'));
+                             array('colspan' => 2,
+                                   'class' => 'align_center'));
+    $table->construct_header($lang->hooks_hook,
+                             array('width' => '100%'));
 
     $query = $db->simple_select('hooks',
                                 'hid,hpriority,hhook,htitle,hdescription,hactive',
@@ -617,10 +617,10 @@ function hooks_page()
         {
             $hook = $row['hhook'];
 
+            $table->construct_cell('', array('colspan' => 2,
+                                             'class' => 'align_center',
+                                             'style' => 'white-space: nowrap;'));
             $table->construct_cell('<strong>'.htmlspecialchars($row['hhook']).'</strong>');
-            $table->construct_cell('', array('class' => 'align_center'));
-            $table->construct_cell('', array('class' => 'align_center',
-                                             'width' => '15%'));
             $table->construct_row();
         }
 
@@ -640,14 +640,6 @@ function hooks_page()
             $delete = " <a href=\"{$deleteurl}\"><img src=\"styles/{$page->style}/images/icons/delete.gif\" alt=\"{$lang->hooks_delete}\" title=\"{$lang->hooks_delete}\" /></a>";
         }
 
-        $table->construct_cell("<div style=\"padding-left: 40px;\"><a href=\"{$editurl}\">"
-                               .htmlspecialchars($row['htitle'])
-                               .'</a>'
-                               .$delete
-                               .'<br />'
-                               .htmlspecialchars($row['hdescription'])
-                               .'</div>');
-
         if(!$row['hactive'])
         {
             $activateurl = $PL->url_append(HOOKS_URL,
@@ -657,7 +649,7 @@ function hooks_page()
 
             $table->construct_cell("<a href=\"{$activateurl}\">{$lang->hooks_activate}</a>",
                                    array('class' => 'align_center',
-                                         'width' => '15%'));
+                                         'style' => 'white-space: nowrap;'));
         }
 
         else
@@ -669,13 +661,14 @@ function hooks_page()
 
             $table->construct_cell("<a href=\"{$deactivateurl}\">{$lang->hooks_deactivate}</a>",
                                    array('class' => 'align_center',
-                                         'width' => '15%'));
+                                         'style' => 'white-space: nowrap;'));
         }
 
         if($row['hactive'])
         {
             $table->construct_cell("<img src=\"styles/{$page->style}/images/icons/tick.gif\" alt=\"{$lang->hooks_tick}\" />",
-                                   array('class' => 'align_center'));
+                                   array('class' => 'align_center',
+                                         'style' => 'white-space: nowrap;'));
 
             $exportids[] = $row['hid'];
         }
@@ -683,8 +676,17 @@ function hooks_page()
         else
         {
             $table->construct_cell("<img src=\"styles/{$page->style}/images/icons/cross.gif\" alt=\"{$lang->hooks_cross}\" />",
-                                   array('class' => 'align_center'));
+                                   array('class' => 'align_center',
+                                         'style' => 'white-space: nowrap;'));
         }
+
+        $table->construct_cell("<div style=\"padding-left: 40px;\"><a href=\"{$editurl}\">"
+                               .htmlspecialchars($row['htitle'])
+                               .'</a>'
+                               .$delete
+                               .'<br />'
+                               .htmlspecialchars($row['hdescription'])
+                               .'</div>');
 
         $table->construct_row();
     }
@@ -694,11 +696,11 @@ function hooks_page()
     $exporturl = $PL->url_append(HOOKS_URL, array('mode' => 'export',
                                                   'hook' => implode(",", $exportids)));
 
-    $table->construct_cell("<img src=\"styles/{$page->style}/images/icons/custom.gif\" /> <a href=\"{$createurl}\">{$lang->hooks_new}</a> ",
-                           array('class' => 'align_center'));
-    $table->construct_cell("<img src=\"styles/{$page->style}/images/icons/increase.gif\" /> <a href=\"{$importurl}\">{$lang->hooks_import}</a> ",
-                           array('class' => 'align_center'));
+    $table->construct_cell("<img src=\"styles/{$page->style}/images/icons/increase.gif\" /> <a href=\"{$importurl}\">{$lang->hooks_import}</a>",
+                           array('class' => 'align_center', 'style' => 'white-space: nowrap;'));
     $table->construct_cell("<img src=\"styles/{$page->style}/images/icons/decrease.gif\" /> <a href=\"{$exporturl}\">{$lang->hooks_export}</a>",
+                           array('class' => 'align_center', 'style' => 'white-space: nowrap;'));
+    $table->construct_cell("<img src=\"styles/{$page->style}/images/icons/custom.gif\" /> <a href=\"{$createurl}\">{$lang->hooks_new}</a> ",
                            array('class' => 'align_center'));
 
     $table->construct_row();
