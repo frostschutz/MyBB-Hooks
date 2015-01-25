@@ -57,7 +57,7 @@ function hooks_info()
         'authorsite'    => 'mailto:Andreas.Klauer@metamorpher.de',
         'version'       => '1.5',
         'guid'          => '51897afbd949d567b9bf97e44800e508',
-        'compatibility' => '16*',
+        'compatibility' => '18*',
     );
 }
 
@@ -637,7 +637,7 @@ function hooks_page()
                                          array('mode' => 'delete',
                                                'hook' => $row['hid'],
                                                'my_post_key' => $mybb->post_code));
-            $delete = " <a href=\"{$deleteurl}\"><img src=\"styles/{$page->style}/images/icons/delete.gif\" alt=\"{$lang->hooks_delete}\" title=\"{$lang->hooks_delete}\" /></a>";
+            $delete = " <a href=\"{$deleteurl}\"><img src=\"styles/{$page->style}/images/icons/delete.png\" alt=\"{$lang->hooks_delete}\" title=\"{$lang->hooks_delete}\" /></a>";
         }
 
         if(!$row['hactive'])
@@ -666,7 +666,7 @@ function hooks_page()
 
         if($row['hactive'])
         {
-            $table->construct_cell("<img src=\"styles/{$page->style}/images/icons/tick.gif\" alt=\"{$lang->hooks_tick}\" />",
+            $table->construct_cell("<img src=\"styles/{$page->style}/images/icons/tick.png\" alt=\"{$lang->hooks_tick}\" />",
                                    array('class' => 'align_center',
                                          'style' => 'white-space: nowrap;'));
 
@@ -675,7 +675,7 @@ function hooks_page()
 
         else
         {
-            $table->construct_cell("<img src=\"styles/{$page->style}/images/icons/cross.gif\" alt=\"{$lang->hooks_cross}\" />",
+            $table->construct_cell("<img src=\"styles/{$page->style}/images/icons/cross.png\" alt=\"{$lang->hooks_cross}\" />",
                                    array('class' => 'align_center',
                                          'style' => 'white-space: nowrap;'));
         }
@@ -696,11 +696,11 @@ function hooks_page()
     $exporturl = $PL->url_append(HOOKS_URL, array('mode' => 'export',
                                                   'hook' => implode(",", $exportids)));
 
-    $table->construct_cell("<img src=\"styles/{$page->style}/images/icons/increase.gif\" /> <a href=\"{$importurl}\">{$lang->hooks_import}</a>",
+    $table->construct_cell("<img src=\"styles/{$page->style}/images/icons/increase.png\" /> <a href=\"{$importurl}\">{$lang->hooks_import}</a>",
                            array('class' => 'align_center', 'style' => 'white-space: nowrap;'));
-    $table->construct_cell("<img src=\"styles/{$page->style}/images/icons/decrease.gif\" /> <a href=\"{$exporturl}\">{$lang->hooks_export}</a>",
+    $table->construct_cell("<img src=\"styles/{$page->style}/images/icons/decrease.png\" /> <a href=\"{$exporturl}\">{$lang->hooks_export}</a>",
                            array('class' => 'align_center', 'style' => 'white-space: nowrap;'));
-    $table->construct_cell("<img src=\"styles/{$page->style}/images/icons/custom.gif\" /> <a href=\"{$createurl}\">{$lang->hooks_new}</a> ",
+    $table->construct_cell("<img src=\"styles/{$page->style}/images/icons/custom.png\" /> <a href=\"{$createurl}\">{$lang->hooks_new}</a> ",
                            array('class' => 'align_center'));
 
     $table->construct_row();
@@ -710,10 +710,10 @@ function hooks_page()
     // legend
     echo "
 <ul class=\"smalltext\">
-    <li style=\"list-style-image: url(styles/{$page->style}/images/icons/tick.gif)\" />
+    <li style=\"list-style-image: url(styles/{$page->style}/images/icons/tick.png)\" />
         {$lang->hooks_legend_tick}
     </li>
-    <li style=\"list-style-image: url(styles/{$page->style}/images/icons/cross.gif)\" />
+    <li style=\"list-style-image: url(styles/{$page->style}/images/icons/cross.png)\" />
         {$lang->hooks_legend_cross}
     </li>
 </ul>
