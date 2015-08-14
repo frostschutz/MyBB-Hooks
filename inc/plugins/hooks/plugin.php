@@ -58,6 +58,7 @@ function hooks_info()
         'version'       => '1.5',
         'guid'          => '51897afbd949d567b9bf97e44800e508',
         'compatibility' => '18*',
+        'codename'      => 'hooks',
     );
 }
 
