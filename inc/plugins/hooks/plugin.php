@@ -1144,7 +1144,7 @@ function hooks_page_export()
     }
 
     // Input field defaults
-    $mybb->input = array_replace(array('compatibility' => '16*',
+    $mybb->input = array_replace(array('compatibility' => '18*',
                                        'version' => '1.0'),
                                  $mybb->input);
 
